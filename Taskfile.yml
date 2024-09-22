@@ -1,0 +1,21 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  act-build:
+    cmds:
+      - act -W .github/workflows/build.yaml
+
+  act-test:
+    cmds:
+      - act -W .github/workflows/test.yaml
+
+  direct:
+    dir: qemu
+    cmds:
+      - genisoimage -output cloud-init.iso -volid cidata -joliet -rock cloud-init/meta-data cloud-init/user-data
+      - PACKER_LOG=0 packer build -force packer.pkr.hcl 

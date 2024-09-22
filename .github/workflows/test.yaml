@@ -1,0 +1,35 @@
+name: build
+
+on: [push]
+
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloads
+          pattern: build
+          merge-multiple: true
+
+      - name: List
+        run: |          
+          ls -ltR
+
+      - name: Build
+        working-directory: src/02-test
+        run: |          
+          set -x
+          
+          # genisoimage -output cloud-init.iso -volid cidata -joliet -rational-rock cloud-init/meta-data cloud-init/user-data
+          genisoimage -output cloud-init.iso -volid cidata -joliet -rational-rock cloud-init/meta-data cloud-init/user-data
+
+          qemu-img rebase -f qcow2 -F qcow2 -b ../src/composer-api-dd9a4349-c395-4b3d-b9a2-005655901c52-disk.qcow2 ../../downloads/build.qcow2
+          qemu-img commit ../../downloads/build.qcow2
+
+          PACKER_LOG=0 packer build -force packer.pkr.hcl

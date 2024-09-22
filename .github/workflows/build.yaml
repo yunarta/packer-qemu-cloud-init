@@ -1,0 +1,31 @@
+name: build
+
+on: [push]
+
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        working-directory: src/01-build
+        run: |
+          mkdir -p log
+          genisoimage -output cloud-init.iso -volid cidata -joliet -rational-rock cloud-init/meta-data cloud-init/user-data
+          PACKER_LOG=0 packer build -force packer.pkr.hcl 
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: src/01-build/output-redhat/*
+          # compression-level: 0          
+
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: log
+          path: src/01-build/log/*.log
+          # compression-level: 0               

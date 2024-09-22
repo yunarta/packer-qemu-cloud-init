@@ -1,0 +1,84 @@
+#cloud-config
+users:
+  - default
+  - name: packer
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCw5BuIBV4kcid4FiyAezWeDEhqLuPrgH7NyJE7KZ3aknK11eFrIEyZUOMT+MC2I8FSBI28qVyiMmN0t4IR3kZf5kKOkOreld1o5PUnE6HL0m5aKGQT8qTXszoIeT2bbnMqaGltcFNIWk+tXuWGA+4EMiTwHIrwFMl0z9dao19majXANodkmJ/q0ALigPewsxg0a/8RIR7GAEBLE5SVr/kvjeZ57qQ9yRcOS6nAlVO4Z1UcJa2hep3ZxIFldUXv2hUlJSiYi05wN+rhyTRFBUgSWHZagE89CeA578o4EypGkHGH/Rg3TFwGRovFLjEWqN/MaPcTKvnt4LUmHKD0RSC+6JALwFf4eYWz2F0H6kT/O6BcJEmbV5x8NFf6uHs+9QLn1axgAVRuH8E+0mZmuKgne0r/tizjxL3j04omka/Rbzxcx9AT/9EPwx2SvYQ2ee3zdimh8R33aDkNwSspX7+qaPnkg0liJreSlhd9YFLTGsaGECIXMgQNZzneVHXgDzc= yunarta@fedora
+
+ssh_pwauth: true
+
+chpasswd:
+  expire: false
+  users:
+    - { name: root, password: root, type: text }
+
+timezone: Asia/Singapore
+
+# manage_resolv_conf: true
+# resolv_conf:
+#   domain: example.com
+
+growpart:
+  devices: [/]
+  ignore_growroot_disabled: false
+  mode: auto
+
+runcmd:
+  - [
+      cloud-init-per,
+      once,
+      remount_tmp_noexec,
+      /usr/local/bin/remount_tmp_noexec.sh,
+    ]
+  - [
+      cloud-init-per,
+      once,
+      packer_setup,
+      /usr/local/bin/packer_setup.sh,  
+    ]
+
+# bootcmd:    
+#   - touch /var/log/per.log
+#   - printf "$(date) boot_hello\n" >> /var/log/per.log
+
+final_message: |
+  cloud-init "build" has finished
+
+write_files:
+  - path: /usr/local/bin/remount_tmp_noexec.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      sed -i '/\/tmp/s/defaults/defaults,noexec/' /etc/fstab
+      mount -o remount,noexec /tmp
+      printf "$(date) remount_tmp_noexec\n" >> /var/log/per.log
+
+  - path: /usr/local/bin/packer_setup.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      mkdir -p /var/packer
+      chown -R packer:packer /var/packer
+
+      mkdir -p /opt/cloud-init
+      chown -R packer:packer /opt/cloud-init
+      printf "$(date) packer_setup\n" >> /var/log/per.log
+  
+  - path: /var/lib/cloud/scripts/per-boot/boot_hello.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      touch /var/log/per.log
+      printf "$(date) boot_hello\n" >> /var/log/per.log
+      
+  - path: /usr/local/bin/packer_cleanup.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      rm /usr/local/bin/remount_tmp_noexec.sh /usr/local/bin/packer_setup.sh /usr/local/bin/packer_cleanup.sh
+      rm /var/log/cloud-init*
+      shutdown -P now
+      

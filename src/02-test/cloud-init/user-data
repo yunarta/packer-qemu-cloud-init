@@ -1,0 +1,3 @@
+#cloud-config
+final_message: |
+  cloud-init "test" has finished
