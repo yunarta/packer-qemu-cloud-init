@@ -14,19 +14,22 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: downloads
-          pattern: "*"
+          pattern: build
+          merge-multiple: true
 
       - run: ls -ltR
 
       - name: Build
-        working-directory: src/03-test
+        working-directory: src/02-install
         run: |
           mkisofs -output cloud-init.iso -volid cidata -joliet -rational-rock cloud-init/meta-data cloud-init/user-data
-
+          
           qemu-img rebase -f qcow2 -F qcow2 -u -b ../../src/composer-api-dd9a4349-c395-4b3d-b9a2-005655901c52-disk.qcow2 ../../downloads/build/build.qcow2
           qemu-img commit ../../downloads/build/build.qcow2
           
-          qemu-img rebase -f qcow2 -F qcow2 -u -b ../../src/composer-api-dd9a4349-c395-4b3d-b9a2-005655901c52-disk.qcow2 ../../downloads/install/install.qcow2
-          qemu-img commit ../../downloads/install/install.qcow2
+          PACKER_LOG=0 packer build -force packer.pkr.hcl 
 
-          PACKER_LOG=0 packer build -force packer.pkr.hcl
+      - uses: actions/upload-artifact@v3
+        with:
+          name: install
+          path: src/02-install/output-redhat/*
