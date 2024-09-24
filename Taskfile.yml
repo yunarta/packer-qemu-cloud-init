@@ -14,4 +14,3 @@ tasks:
   act-test:
     cmds:
       - act -W .github/workflows/test.yaml
-\
