@@ -51,9 +51,11 @@ build {
   }
 
   provisioner "shell" {
+    execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E bash -el '{{ .Path }}'"
     remote_folder = "/var/packer"
     inline = [
-      "sudo sh /var/packer/files/setup-puppet.sh"
+      "sh /var/packer/files/setup-puppet.sh",
+      "cp -rv /var/packer/files/root/. /"
     ]
   }
 }
